@@ -1,0 +1,39 @@
+name: Update link icons
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  icons:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Replace emoji icons with platform logos
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              '<div class="icon">💚</div>': '<div class="icon"><img src="https://cdn.simpleicons.org/whatsapp/173b22" alt="WhatsApp"></div>',
+              '<div class="icon">📸</div>': '<div class="icon"><img src="https://cdn.simpleicons.org/instagram/173b22" alt="Instagram"></div>',
+              '<div class="icon">🎵</div>': '<div class="icon"><img src="https://cdn.simpleicons.org/tiktok/173b22" alt="TikTok"></div>',
+          }
+          for old, new in replacements.items():
+              s = s.replace(old, new)
+          s = s.replace('.icon{width:52px;height:52px;min-width:52px;border-radius:14px;background:#edf3e9;display:flex;align-items:center;justify-content:center;font-size:25px}', '.icon{width:52px;height:52px;min-width:52px;border-radius:14px;background:#edf3e9;display:flex;align-items:center;justify-content:center}.icon img{width:27px;height:27px;display:block}')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit updated page
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Use real social platform icons [skip ci]"
+          git push
